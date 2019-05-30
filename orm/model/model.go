@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/sunmi-OS/gocore/gorm"
@@ -35,12 +36,18 @@ func (m *Machine) GetList() []Machine {
 }
 
 func (m *Machine) GetList2() []Machine {
-	MachineList := []Machine{}
 
 	rows, err := gorm.GetORM().Model(m).Select("id,level,name,parent_id,tree_path,created_at,updated_at").Rows()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+
+	return m.rowsToMachine(rows)
+}
+
+func (m *Machine) rowsToMachine(rows *sql.Rows) []Machine {
+	MachineList := []Machine{}
+
 	defer rows.Close()
 	for rows.Next() {
 

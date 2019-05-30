@@ -1,15 +1,56 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"os"
 	"runtime"
 	"sort"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/labstack/echo"
 	"github.com/sunmi-OS/gocore/api"
+	"github.com/tidwall/gjson"
 	"github.com/urfave/cli"
 )
+
+var jsonString = `
+{
+    "l1": {
+        "l1_1": [
+            "l1_1_1",
+            "l1_1_2"
+        ],
+        "l1_2": {
+            "l1_2_1": 121
+        }
+    },
+    "l2": {
+        "l2_1": null,
+        "l2_2": true,
+        "l2_3": {}
+    }
+}
+`
+
+type Demo struct {
+	L1 L1Demo `json:"l1"`
+	L2 L2Demo `json:"l2"`
+}
+
+type L1Demo struct {
+	L1_1 []string `json:"l1_1"`
+	L1_2 L1_2Demo `json:"l1_2"`
+}
+
+type L1_2Demo struct {
+	L1_2_1 int `json:"l1_2_1"`
+}
+
+type L2Demo struct {
+	L2_1 interface{} `json:"l2_1"`
+	L2_2 interface{} `json:"l2_2"`
+	L2_3 interface{} `json:"l2_3"`
+}
 
 type EchoApi struct {
 }
@@ -25,32 +66,39 @@ func (a *EchoApi) echoStart(c *cli.Context) error {
 	//e.Use(middleware.Recover())
 
 	// Route => handler
-	e.Any("/", func(c echo.Context) error {
+	e.Any("/gjson", func(c echo.Context) error {
 
-		request := api.NewRequest(c)
 		response := api.NewResponse(c)
 
-		err := request.InitRawJson()
-		if err != nil {
-			return response.RetError(err, 400)
-		}
+		gj := gjson.Parse(jsonString)
 
-		if err != nil {
-			fmt.Println(err.Error())
-		}
+		gj.Get("l1.l1_2.l1_2_1").String()
+		gj.Get("l1.l1_1").Array()
+		gj.Get("l2").Map()
 
 		return response.RetSuccess("sccess")
 	})
 
-	e.Any("/gorm2", func(c echo.Context) error {
+	e.Any("/json", func(c echo.Context) error {
 
-		request := api.NewRequest(c)
 		response := api.NewResponse(c)
 
-		err := request.InitRawJson()
-		if err != nil {
-			return response.RetError(err, 400)
-		}
+		demo := &Demo{}
+
+		json.Unmarshal([]byte(jsonString), demo)
+
+		return response.RetSuccess("sccess")
+	})
+
+	e.Any("/jsoniter", func(c echo.Context) error {
+
+		response := api.NewResponse(c)
+
+		demo := &Demo{}
+
+		var json = jsoniter.ConfigCompatibleWithStandardLibrary
+
+		json.Unmarshal([]byte(jsonString), demo)
 
 		return response.RetSuccess("sccess")
 	})
